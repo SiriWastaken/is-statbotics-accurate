@@ -1,36 +1,39 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Is Statbotics Accurate?
 
-## Getting Started
+Type an FRC event key, get a verdict: **YES.**, **KINDA.**, or **NOT TODAY.**
 
-First, run the development server:
+![Screenshot](docs/screenshot.png)
+<!-- TODO: add docs/screenshot.png -->
+
+Live: https://is-statbotics-accurate.vercel.app
+
+## How it works
+
+The page calls the public [Statbotics API](https://www.statbotics.io/docs/rest) (`GET /v3/matches?event=<key>&elim=false`) from your browser and keeps every completed qualification match that has both a result and a prediction. Statbotics predicts each match as a red-alliance win probability (`pred.red_win_prob`). The favored alliance (red at 50% or above) is the predicted winner, and the call counts as correct only if that alliance won, so ties always count as misses. Accuracy is correct calls divided by matches scored. The Brier score is the mean of `(red_win_prob − outcome)²`, where red win = 1, blue win = 0 and tie = 0.5; lower is better. Accuracy of 75% or more is "YES.", 60–75% is "KINDA.", and anything lower is "NOT TODAY." There is no backend: the site is a static export, and all the scoring lives in `lib/score.ts`.
+
+## Limitations
+
+- **Predictions use pre-event ratings.** Statbotics' EPA updates as an event goes on, but each match is predicted from the ratings teams had before it. Early matches are graded against the least information.
+- **Small events give noisy accuracy.** At 50–80 qualification matches, a handful of upsets moves the number several points. Don't read much into one event.
+- **Qualification matches only.** Playoff matches are excluded.
+- If the Statbotics API is down or slow, the page shows an error with a retry button. Statbotics returns HTTP 500 for both "not found" and real failures, so an unknown event key can show up as a network error while the API is having trouble.
+
+## Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
+npm test        # Vitest, scoring functions
+npm run lint
+npm run build   # static export to out/
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+No environment variables or API keys are needed.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deploy
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Vercel:** import the repo at vercel.com/new. The Next.js preset works as-is, with no env vars. Set the project name to `is-statbotics-accurate` to get that subdomain.
 
-## Learn More
+**GitHub Pages:** in the repo, go to Settings → Pages → Source and pick "GitHub Actions". Then add `.github/workflows/pages.yml` that runs `PAGES_BASE_PATH=/is-statbotics-accurate npm run build` and uploads `out/` with `actions/upload-pages-artifact` + `actions/deploy-pages`. If you serve from Pages, change `metadataBase` in `app/layout.tsx` to the Pages URL.
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Not affiliated with Statbotics or FIRST.
